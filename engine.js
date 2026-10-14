@@ -80,6 +80,15 @@ function replyPrompt(phone, contactId, names) {
   ].join('\n');
 }
 
+function callLines(text) {
+  return String(text || '')
+    .replace(/<think[\s\S]*?<\/think>/gi, '')
+    .split(/\n+/)
+    .map((s) => s.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim())
+    .filter((s) => s && s.length <= 300 && !/(промпт|system prompt|ассистент)/i.test(s))
+    .slice(0, 6);
+}
+
 function commentPrompt(phone, post, names) {
   return [
     'Короткий комментарий в ленте от лица ' + (names.char || 'персонажа') + '.',
@@ -89,7 +98,7 @@ function commentPrompt(phone, post, names) {
 }
 
 const LocalSocialEngine = {
-  uid, blankPhone, ensurePeople, contact, thread, recentLines, promptBlock, cleanReply, replyPrompt, commentPrompt,
+  uid, blankPhone, ensurePeople, contact, thread, recentLines, promptBlock, cleanReply, replyPrompt, commentPrompt, callLines,
 };
 globalThis.LocalSocialEngine = LocalSocialEngine;
 export { LocalSocialEngine };

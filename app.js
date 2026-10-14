@@ -9,9 +9,12 @@ function bootSocial(host) {
   let peer = null;
   let urls = {};
 
+  let galleryGen = 0;
+
   function idb() {
+    const factory = shell.win().indexedDB || indexedDB;
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open('local-social', 1);
+      const req = factory.open('local-social', 1);
       req.onupgradeneeded = () => {
         if (!req.result.objectStoreNames.contains('images')) req.result.createObjectStore('images', { keyPath: 'id' });
       };
@@ -142,10 +145,11 @@ function bootSocial(host) {
       '<label class="lx-btn primary">Выбрать снимок<input id="lx-shot" type="file" accept="image/*" hidden></label>' +
       '<div class="lx-grid" id="lx-gallery"></div>';
     const gallery = ui.body.querySelector('#lx-gallery');
+    const gen = ++galleryGen;
     phone.images.slice(0, 24).forEach(async (img) => {
       let row = null;
       try { row = await getImage(img.id); } catch (e) { row = null; }
-      if (!row || !row.blob) return;
+      if (gen !== galleryGen || !gallery.isConnected || !row || !row.blob) return;
       if (!urls[img.id]) urls[img.id] = URL.createObjectURL(row.blob);
       const card = document.createElement('div');
       card.className = 'lx-card';
@@ -324,7 +328,7 @@ function bootSocial(host) {
       ].join('\n');
       try {
         const raw = await host.generate(prompt);
-        const lines = String(raw || '').split(/\n+/).map((s) => s.trim()).filter(Boolean).slice(0, 6);
+        const lines = eng.callLines(raw);
         phone.threads.call = phone.threads.call || [];
         lines.forEach((text) => phone.threads.call.push({ id: eng.uid(), from: 'call', text: text.slice(0, 300), ts: Date.now() }));
         await save();
@@ -340,6 +344,7 @@ function bootSocial(host) {
   const open = async () => { await load(); view = 'home'; ui.open(); render(); };
   host.addMenu('Локальный телефон', open);
   shell.listen(shell.win(), 'open-social', 'local-social-open', open);
+  load();
   return { open, close: () => ui.close() };
 }
 
